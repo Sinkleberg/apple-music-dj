@@ -18,6 +18,7 @@ Built as an [OpenClaw](https://openclaw.ai) skill, on [ClawHub](https://clawhub.
 - **🧬 Taste DNA Profiling** — Deep analysis of your listening from recently played, heavy rotation, library, ratings, recommendations, and Apple Music Replay
 - **🧪 Demo mode** — Try every feature against a fictional listener, no tokens needed
 - **🔑 One-step setup** — `setup_auth.py` signs your developer token and gets your user token from a browser sign-in
+- **🔗 Taste codes** — Send a friend one short line and blend your tastes, no files to swap
 - **🎵 8 Playlist Strategies** — Deep cuts, mood/activity, trend radar, constellation discovery, playlist refresh, **songs-like-X seed**, **decade throwbacks**, and **two-person blends**
 - **🌊 Energy-arc sequencing** — Playlists build, peak and wind down (or rise/fall for workouts and sleep) instead of just spacing artists out
 - **📈 Taste Drift** — Dated snapshots show how your genres, artists and listener archetype change over time
@@ -158,7 +159,8 @@ Just talk naturally. Here's what the DJ understands:
 | "Refresh my focus playlist" | Evolves an existing playlist with fresh tracks |
 | "Songs like Phoebe Bridgers" | Seed strategy — similar artists, filtered through your taste |
 | "Make me a 90s throwback" | Decade playlist built from your own artists |
-| "Blend my taste with my sister's" | One playlist for two listeners (needs their profile JSON) |
+| "Blend my taste with my sister's" | One playlist for two listeners (needs their taste code or profile JSON) |
+| "Give me my taste code" | A short `amdj1:…` line a friend can blend with |
 | "How has my taste changed since spring?" | Taste drift report from your saved snapshots |
 | "Import my Spotify playlist" | Previews matches first, then creates it |
 | "I didn't like track 7" | Rates it down and updates your profile |
@@ -195,6 +197,7 @@ apple-music-dj/
     ├── strategy_engine.py      # 8 playlist strategies + energy-arc sequencing
     ├── taste_card.py           # Shareable Taste DNA Card (SVG/text)
     ├── compatibility.py        # Taste compatibility scoring
+    ├── share_code.py           # Taste codes for blending with a friend
     ├── listening_insights.py   # Timeline, streaks, year-in-review
     ├── catalog_explorer.py     # Gap analysis, album dive, rabbit hole
     ├── daily_pick.py           # Daily song drop & instant recommendation
@@ -211,6 +214,23 @@ apple-music-dj/
     ├── setup_cron.py           # Cron automation setup
     └── verify_setup.sh         # Setup verification checker
 ```
+
+## 🔗 Blend with a friend
+
+No files to swap. Each of you runs one command, sends the other a short code, and either of you
+makes the blend:
+
+```bash
+python3 scripts/share_code.py make                 # prints your code, e.g. amdj1:eNpV0E0K…
+python3 scripts/share_code.py show amdj1:eNpV0E0K…   # see exactly what a code contains
+python3 scripts/strategy_engine.py --strategy blend --profile ~/.apple-music-dj/taste_profile.json \
+        --profile-b amdj1:eNpV0E0K… --storefront us
+```
+
+A code holds only artist names, genre and decade weights and a few scores: no song IDs, ratings,
+library or tokens, and nothing is uploaded. Codes from other people are size-capped, validated and
+cleaned before use. A blend from a code can't use their loved tracks or dislikes, so it leans on
+shared artists and the genres you have in common.
 
 ## 📸 Sample output
 

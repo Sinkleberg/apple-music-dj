@@ -56,6 +56,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from compatibility import profile_compatibility
+from share_code import load_profile_arg, resolve_artist_ids
 from _common import (
     call_api,
     filter_generic_genres,
@@ -1213,7 +1214,7 @@ def main():
     parser.add_argument("--playlist-id", default=None,
                         help="Playlist ID for refresh strategy")
     parser.add_argument("--profile-b", default=None,
-                        help="Second listener's taste profile JSON (blend strategy)")
+                        help="Second listener's taste profile JSON, or a taste code (amdj1:...) they sent you (blend strategy)")
     parser.add_argument("--similar-to", dest="similar_to", default=None,
                         help="Artist or song to find similar music to (similar strategy)")
     parser.add_argument("--similar-type", dest="similar_type", default="auto", choices=["auto", "artist", "song"],
@@ -1278,7 +1279,11 @@ def main():
         if not args.profile_b:
             print("ERROR: --profile-b required for blend strategy.", file=sys.stderr)
             sys.exit(1)
-        profile_b = load_profile(args.profile_b)
+        profile_b = load_profile_arg(args.profile_b)
+        if profile_b.get("shared_code"):
+            found = resolve_artist_ids(profile_b, sf)
+            print(f"  Found {found} of their top artists in the catalog "
+                  "(a taste code has no song IDs, so their loved tracks and dislikes aren't used).", file=sys.stderr)
         tracks = strategy_blend(profile, profile_b, sf, target_size)
     elif args.strategy == "era":
         try:

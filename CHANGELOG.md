@@ -5,10 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.3.2] — Unreleased
+## [3.4.0] — Unreleased
 
 ### Added
 
+- **Taste codes: blend with a friend without swapping files.** `python3 scripts/share_code.py make` prints a short `amdj1:…` code (about 200 characters) built from the same ID-free data as a taste snapshot: artist names, genre and decade weights and a few scores. `share_code.py show <code>` lists exactly what a code contains. `strategy_engine.py --strategy blend` and `compatibility.py profile` now accept a code anywhere they took a profile path (`--profile-b <code>`). The friend's top artists are looked up in the catalog by name (an exact-name match only, up to 8 lookups), and a blend from a code does not use their loved tracks or dislikes, because a code carries no song IDs. Codes from other people are untrusted input: length- and decompression-capped, strictly validated, and every string is cleaned of control and invisible characters and shortened before use. `share_code.py` makes no network calls and writes no files.
 - **Animated demo in the README** (`assets/demo-tour.svg`): a terminal replay of the real `demo.py tour` output (taste card, songs like Radiohead, a 90s throwback, a daily pick, a compatibility score). It plays on GitHub, shows a still when the viewer prefers reduced motion, and is regenerated with `make demo-svg`.
 - **"Moving from Spotify?" section** in the README, `references/spotify-import.md` (how to get a playlist out of Spotify, what exact / fuzzy / unmatched mean, limits) and `assets/sample-spotify-export.csv` to try the importer with no account.
 - **Pre-publish self-audit** (`make audit`): runs the trust, listing and packaging checks, lists the published files that changed since the last tag and prints a review prompt covering ClawHub's concerns. `CONTRIBUTING.md` makes it step 0 of a release.

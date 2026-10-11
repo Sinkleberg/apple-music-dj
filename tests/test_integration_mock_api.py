@@ -353,6 +353,52 @@ class TestStrategies:
         assert plan["tracks"] and plan["compatibility"]["compatibility_pct"] > 50
         assert {t["source"] for t in plan["tracks"]} <= {"shared", "a", "b"}
 
+    def test_blend_with_a_taste_code(self, api, profile):
+        """A friend's code has artist names only; the blend looks their artists up and writes nothing."""
+        code = api("share_code.py", "make", "--profile", profile).stdout.strip()
+        assert code.startswith("amdj1:")
+        res = api("strategy_engine.py", "--profile", profile, "--storefront", "us", "--strategy", "blend",
+                  "--profile-b", code)
+        plan = json.loads(res.stdout)
+        assert plan["tracks"] and plan["compatibility"]["compatibility_pct"] > 50
+        assert "of their top artists in the catalog" in res.stderr
+        assert api.mock.writes() == []
+
+    def test_hostile_artist_names_in_a_code_are_only_ever_data(self, api, profile):
+        """Names from a stranger's code reach the catalog search, never a shell."""
+        import base64
+        import zlib
+        names = ["$(touch PWNED_SUB)", "`touch PWNED_TICK`", "x; touch PWNED_SEMI #", "a' && touch PWNED_QUOTE && '",
+                 "Radiohead"]
+        payload = {"v": 1, "a": [[n, 5] for n in names], "g": [["Rock", 1]]}
+        code = "amdj1:" + base64.urlsafe_b64encode(zlib.compress(json.dumps(payload).encode())).decode().rstrip("=")
+        res = api("strategy_engine.py", "--profile", profile, "--storefront", "us", "--strategy", "blend",
+                  "--profile-b", code, check=False)
+        assert res.returncode == 0, res.stderr
+        for marker in ("PWNED_SUB", "PWNED_TICK", "PWNED_SEMI", "PWNED_QUOTE"):
+            assert not list(api.tmp.rglob(marker)) and not list(api.home.rglob(marker))
+        searched = [r["query"] for r in api.mock.requests if "/search" in r["path"]]
+        assert any("PWNED_SUB" in json.dumps(q) for q in searched)  # it was looked up as plain text
+        assert "PWNED" not in res.stdout  # names the catalog doesn't know never reach the plan the agent reads
+        assert api.mock.writes() == []
+
+    def test_a_bad_code_stops_the_blend_cleanly(self, api, profile):
+        res = api("strategy_engine.py", "--profile", profile, "--storefront", "us", "--strategy", "blend",
+                  "--profile-b", "amdj1:definitely-not-valid", check=False)
+        assert res.returncode == 1 and "ERROR" in res.stderr and not res.stdout.strip()
+        assert api.mock.writes() == []
+
+    def test_compatibility_accepts_a_taste_code(self, api, profile):
+        code = api("share_code.py", "make", "--profile", profile).stdout.strip()
+        result = json.loads(api("compatibility.py", "profile", profile, code).stdout)
+        assert result["compatibility_pct"] > 50
+
+    def test_share_code_commands_need_no_tokens_and_make_no_requests(self, api, profile):
+        before = len(api.mock.requests)
+        code = api("share_code.py", "make", "--profile", profile).stdout.strip()
+        assert "Top artists:" in api("share_code.py", "show", code).stdout
+        assert len(api.mock.requests) == before
+
     def test_mood_arc_descends_for_sleep(self, api, profile):
         plan = self._plan(api, profile, "--strategy", "mood", "--mood", "sleep", "--size", "8")
         energies = [t["energy"] for t in plan["tracks"] if "energy" in t]
