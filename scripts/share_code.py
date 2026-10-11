@@ -12,8 +12,9 @@ Usage:
   python3 strategy_engine.py --strategy blend --profile mine.json --profile-b <code> --storefront us
   python3 compatibility.py profile mine.json <code>
 
-A code from another person is untrusted input: it is size-capped, strictly validated, and every
-string in it is stripped of control characters and shortened before anything uses it.
+A code from another person is untrusted input: it is size-capped, its shape is checked (anything
+it holds beyond the known fields is ignored, and over-long lists are cut), and every string in it is
+stripped of control characters and shortened before anything uses it.
 This script makes no network calls and writes no files.
 """
 
@@ -111,6 +112,8 @@ def decode(code: str) -> dict:
         data = inflater.decompress(base64.urlsafe_b64decode(body + "=" * (-len(body) % 4)), MAX_JSON_BYTES + 1)
         if len(data) > MAX_JSON_BYTES or inflater.unconsumed_tail or not inflater.eof:
             raise ShareCodeError("The code is damaged or too large. Was it cut off?")
+        if inflater.unused_data:  # bytes after a complete stream: not something `make` ever produces
+            raise ShareCodeError("The code has extra data after its end. Was it edited?")
         obj = json.loads(data.decode("utf-8"))
     except ShareCodeError:
         raise

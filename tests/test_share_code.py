@@ -93,6 +93,15 @@ class TestRejectsBadCodes:
         with pytest.raises(sc.ShareCodeError, match="damaged"):
             sc.decode(sc.PREFIX + base64.urlsafe_b64encode(b"just text, not zlib").decode().rstrip("="))
 
+    def test_data_hidden_after_the_stream_is_refused(self):
+        good = sc.encode(make_profile())
+        body = good[len(sc.PREFIX):]
+        stream = base64.urlsafe_b64decode(body + "=" * (-len(body) % 4))
+        padded = sc.PREFIX + base64.urlsafe_b64encode(stream + b"hidden payload").decode().rstrip("=")
+        assert sc.decode(good)["top_artists"]
+        with pytest.raises(sc.ShareCodeError, match="extra data"):
+            sc.decode(padded)
+
     def test_decompression_bomb_is_refused(self):
         code = raw_code(b"0" * 3_000_000)
         assert len(code) < sc.MAX_CODE_CHARS  # small enough to pass the length check
