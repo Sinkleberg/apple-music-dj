@@ -11,6 +11,13 @@ from taste_card import generate_year_review_svg, generate_year_review_text
 
 
 class TestMain:
+    @pytest.fixture(autouse=True)
+    def isolate_commands(self, monkeypatch):
+        for command in ("timeline", "streaks", "year_review"):
+            monkeypatch.setattr(
+                f"listening_insights.cmd_{command}", Mock(side_effect=AssertionError("Unexpected command dispatch"))
+            )
+
     @pytest.fixture
     def profile_path(self, tmp_path, sample_profile):
         profile = tmp_path / "profile.json"

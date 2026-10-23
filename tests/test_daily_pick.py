@@ -12,6 +12,13 @@ from daily_pick import daily_seed, get_time_context, score_candidate, get_candid
 
 
 class TestMain:
+    @pytest.fixture(autouse=True)
+    def isolate_commands(self, monkeypatch):
+        for command in ("daily", "now"):
+            monkeypatch.setattr(
+                f"daily_pick.cmd_{command}", Mock(side_effect=AssertionError("Unexpected command dispatch"))
+            )
+
     @pytest.mark.parametrize("command", ["daily", "now"])
     def test_dispatches_with_the_loaded_profile_and_prints_json(
         self, monkeypatch, capsys, tmp_path, sample_profile, command
