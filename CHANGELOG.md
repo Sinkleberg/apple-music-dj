@@ -5,6 +5,12 @@
 ### Added
 
 - **Token-renewal reminder in the daily drop:** when the developer token is close to expiry or the user token is getting old, `daily_pick.py daily` adds the warning to the day's pick message, so a scheduled job surfaces it where you'll see it instead of only in its log.
+- **Year-in-review caption:** `listening_insights.py year-review` adds a ready-to-post `caption` ("My 2025 on Apple Music: 500 hours of music, #1 artist …"), leaving out whatever is unknown.
+
+### Fixed
+
+- **Compatibility scores were deflated, worst for varied taste** ([#59](https://github.com/and3rn3t/apple-music-dj/issues/59)). The genre score counted each genre's weight twice, so a profile compared with itself scored 75% ("Strong alignment"), a listener spread over ten genres matched themselves at 0.2, and Muse came out as a 32% "Stretch pick" for someone whose top genres are Alternative and Rock. Profile and blend comparisons now use a weighted overlap of the two genre mixes (identical = 100%, half credit within a genre family, same score in both directions). Artist compatibility now scores how much the listener likes each of the artist's genres relative to their top genre, so Muse lands at 77% "Strong overlap". Expect higher scores across the board for listeners with varied taste.
+- **Year-in-review card showed 0 hours and "Unknown" for everything.** `listening_insights.py year-review` nested its Replay numbers under `replay_data`, while `taste_card.py --mode year-review` read top-level fields, so a card made from real output lost the hours, #1 artist, top genre and top songs. The review now also emits `total_minutes`, `top_artist`, `top_genre` and `top_songs` (`replay_data` is unchanged). Without Replay for that year the card shows "—" for hours instead of 0, and takes the top artist and genre from the current profile, labelled "(now)" on the card and in the caption ("My Apple Music taste right now: …") so they are never passed off as that year's. A test now feeds real `year-review` output into the card.
 
 ### Changed
 
